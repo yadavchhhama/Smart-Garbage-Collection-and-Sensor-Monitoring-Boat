@@ -1,0 +1,69 @@
+#include "DHT.h" // Include the DHT library
+
+// Turbidity Sensor Setup
+const int turbidityPin = 36; // GPIO pin connected to turbidity sensor
+int turbidityValue = 0;
+
+// DHT22 Sensor Setup
+#define DHTPIN 4           // GPIO pin connected to DHT22
+#define DHTTYPE DHT22      // DHT22 sensor type
+DHT dht(DHTPIN, DHTTYPE);  // Initialize DHT22 sensor
+
+// HC-SR04 Ultrasonic Sensor Setup
+const int trigPin = 5;     // GPIO pin connected to TRIG
+const int echoPin = 18;    // GPIO pin connected to ECHO
+long duration;             // Variable for echo time
+float distanceCm;          // Calculated distance in cm
+
+void setup() {
+  Serial.begin(115200);         // Start serial communication
+  pinMode(turbidityPin, INPUT); // Set turbidity pin mode to input
+  pinMode(trigPin, OUTPUT);     // Set TRIG pin as output
+  pinMode(echoPin, INPUT);      // Set ECHO pin as input
+  dht.begin();                  // Initialize DHT22 sensor
+}
+
+void loop() {
+  // ------------------ Turbidity Sensor Reading ------------------
+  turbidityValue = analogRead(turbidityPin);          // Read analog value from turbidity sensor
+  float voltage = turbidityValue * (3.3 / 4095.0);    // Convert to voltage
+  float NTU = map(voltage, 0.0, 3.3, 3000, 0);        // Convert voltage to NTU (adjust as needed)
+
+  Serial.print("Turbidity - Analog Reading: ");
+  Serial.print(turbidityValue);
+  Serial.print(" Voltage: ");
+  Serial.print(voltage);
+  Serial.print(" NTU: ");
+  Serial.println(NTU);
+
+  // ------------------ DHT22 Sensor Reading ------------------
+  float temperature = dht.readTemperature(); // Read temperature in Celsius
+  float humidity = dht.readHumidity();       // Read humidity in percentage
+
+  if (isnan(temperature) || isnan(humidity)) {
+    Serial.println("Failed to read from DHT22 sensor!");
+  } else {
+    Serial.print("DHT22 - Temperature: ");
+    Serial.print(temperature);
+    Serial.print(" °C  Humidity: ");
+    Serial.print(humidity);
+    Serial.println(" %");
+  }
+
+  // ------------------ HC-SR04 Ultrasonic Sensor Reading ------------------
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH); // Send a 10µs pulse to trigger pin
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  duration = pulseIn(echoPin, HIGH); // Measure the time for the echo
+  distanceCm = duration * 0.034 / 2; // Convert time to distance in cm
+
+  Serial.print("HC-SR04 - Distance: ");
+  Serial.print(distanceCm);
+  Serial.println(" cm");
+
+  // ------------------ Delay for Readability ------------------
+  delay(1000); // Delay for readability
+}
